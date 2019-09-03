@@ -6,8 +6,46 @@
 import argparse
 import os
 import sys
+import numpy as np
+from urllib import request
+import gzip
+import pickle
 import tensorflow as tf
 from tensorflow.examples.tutorials.mnist import input_data
+
+
+UBYTE_PATH = "data/mnist/ubyte/"
+
+# Credit: https://github.com/hsjeong5/
+filename = [
+    ["training_images","train-images-idx3-ubyte.gz"],
+    ["test_images","t10k-images-idx3-ubyte.gz"],
+    ["training_labels","train-labels-idx1-ubyte.gz"],
+    ["test_labels","t10k-labels-idx1-ubyte.gz"]]
+
+
+def download_mnist():
+    base_url = "http://yann.lecun.com/exdb/mnist/"
+    for name in filename:
+        print("Downloading "+name[1]+"...")
+        try:
+            os.mkdir(UBYTE_PATH)
+        except:
+            pass
+        request.urlretrieve(base_url + name[1], UBYTE_PATH + name[1])
+    print("Download complete.")
+
+
+def load_mnist():
+    mnist = {}
+    for name in filename[:2]:
+        with gzip.open(UBYTE_PATH + name[1], 'rb') as f:
+            mnist[name[0]] = np.frombuffer(f.read(), np.uint8, offset=16).reshape(-1,28*28)
+    for name in filename[-2:]:
+        with gzip.open(UBYTE_PATH + name[1], 'rb') as f:
+            mnist[name[0]] = np.frombuffer(f.read(), np.uint8, offset=8)
+    return mnist
+
 
 def _data_path(data_directory:str, name:str) -> str:
     """Construct a full path to a TFRecord file to be stored in the 
@@ -47,7 +85,7 @@ def _bytes_feature(value:str) -> tf.train.Features.FeatureEntry:
     """
     return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
 
-def convert_to(data_set, name:str, data_directory:str, num_shards:int=1):
+def convert_to(images, labels, name:str, data_directory:str, num_shards:int=1):
     """Convert the dataset into TFRecords on disk
     
     Args:
@@ -57,11 +95,11 @@ def convert_to(data_set, name:str, data_directory:str, num_shards:int=1):
         num_shards:     The number of files on disk to separate records into
     """
     print(f'Processing {name} data')
-
-    images = data_set.images
-    labels = data_set.labels
-    
-    num_examples, rows, cols, depth = data_set.images.shape
+   
+    num_examples = len(images)
+    depth = 1
+    width = 28
+    height = 28
 
     def _process_examples(start_idx:int, end_index:int, filename:str):
         with tf.python_io.TFRecordWriter(filename) as writer:
@@ -71,8 +109,8 @@ def convert_to(data_set, name:str, data_directory:str, num_shards:int=1):
 
                 image_raw = images[index].tostring()
                 example = tf.train.Example(features=tf.train.Features(feature={
-                    'height': _int64_feature(rows),
-                    'width': _int64_feature(cols),
+                    'height': _int64_feature(height),
+                    'width': _int64_feature(width),
                     'depth': _int64_feature(depth),
                     'label': _int64_feature(int(labels[index])),
                     'image_raw': _bytes_feature(image_raw)
@@ -80,9 +118,9 @@ def convert_to(data_set, name:str, data_directory:str, num_shards:int=1):
                 writer.write(example.SerializeToString())
     
     if num_shards == 1:
-        _process_examples(0, data_set.num_examples, _data_path(data_directory, name))
+        _process_examples(0, num_examples, _data_path(data_directory, name))
     else:
-        total_examples = data_set.num_examples
+        total_examples = num_examples
         samples_per_shard = total_examples // num_shards
 
         for shard in range(num_shards):
@@ -92,6 +130,7 @@ def convert_to(data_set, name:str, data_directory:str, num_shards:int=1):
 
     print()
 
+
 def convert_to_tf_record(data_directory:str):
     """Convert the TF MNIST Dataset to TFRecord formats
     
@@ -99,14 +138,12 @@ def convert_to_tf_record(data_directory:str):
         data_directory: The directory where the TFRecord files should be stored
     """
 
-    mnist = input_data.read_data_sets(
-        "/tmp/tensorflow/mnist/input_data", 
-        reshape=False
-    )
+    download_mnist()
+    mnist = load_mnist()
     
-    convert_to(mnist.validation, 'validation', data_directory)
-    convert_to(mnist.train, 'train', data_directory)
-    convert_to(mnist.test, 'test', data_directory)
+    convert_to(mnist["training_images"], mnist["training_labels"], 'train', data_directory)
+    convert_to(mnist["test_images"], mnist["test_labels"], 'test', data_directory)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

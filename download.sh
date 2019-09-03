@@ -24,6 +24,7 @@ done
 # MNIST
 #
 mkdir -p "./data/mnist/tfrecord"
+mkdir -p "./data/mnist/ubyte"
 
 
 #

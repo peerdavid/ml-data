@@ -16,7 +16,7 @@ from tensorflow.examples.tutorials.mnist import input_data
 
 UBYTE_PATH = "data/mnist/ubyte/"
 
-# Credit: https://github.com/hsjeong5/
+# Credit for downloading and loading ubyte files - https://github.com/hsjeong5/
 filename = [
     ["training_images","train-images-idx3-ubyte.gz"],
     ["test_images","t10k-images-idx3-ubyte.gz"],
@@ -28,10 +28,6 @@ def download_mnist():
     base_url = "http://yann.lecun.com/exdb/mnist/"
     for name in filename:
         print("Downloading "+name[1]+"...")
-        try:
-            os.mkdir(UBYTE_PATH)
-        except:
-            pass
         request.urlretrieve(base_url + name[1], UBYTE_PATH + name[1])
     print("Download complete.")
 

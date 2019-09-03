@@ -36,10 +36,10 @@ def load_mnist():
     mnist = {}
     for name in filename[:2]:
         with gzip.open(UBYTE_PATH + name[1], 'rb') as f:
-            mnist[name[0]] = np.frombuffer(f.read(), np.uint8, offset=16).reshape(-1,28*28)
+            mnist[name[0]] = np.frombuffer(f.read(), np.uint8, offset=16).reshape(-1,28*28).astype(np.float32)
     for name in filename[-2:]:
         with gzip.open(UBYTE_PATH + name[1], 'rb') as f:
-            mnist[name[0]] = np.frombuffer(f.read(), np.uint8, offset=8)
+            mnist[name[0]] = np.frombuffer(f.read(), np.uint8, offset=8).astype(np.float32)
     return mnist
 
 

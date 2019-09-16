@@ -83,7 +83,10 @@ def convert_to_tfrecord(input_files, output_file):
         example = tf.train.Example(features=tf.train.Features(
             feature={
                 'image': _bytes_feature(data[i].tobytes()),
-                'label': _int64_feature(labels[i])
+                'label': _int64_feature(labels[i]),
+                'width': _int64_feature(32),
+                'height': _int64_feature(32),
+                'depth':  _int64_feature(3)
             }))
         record_writer.write(example.SerializeToString())
 

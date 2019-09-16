@@ -48,3 +48,7 @@ while read url ; do
 done < "./url_svhn.txt"
 
 echo "svhn: Done fetching files. Extracting..."
+
+# cifar10
+mkdir -p "./data/cifar10/tfrecord"
+mkdir -p "./data/cifar10/ubyte"
